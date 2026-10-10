@@ -1,0 +1,47 @@
+# XcodeGen spec for the sandboxed .app target.
+#   brew install xcodegen && xcodegen generate && open BaccaratAssistant.xcodeproj
+# The app target compiles Sources/BaccaratApp and links the local package's libraries.
+name: BaccaratAssistant
+options:
+  bundleIdPrefix: com.example.baccarat
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_STRICT_CONCURRENCY: targeted
+packages:
+  BaccaratAssistantKit:
+    path: .
+targets:
+  BaccaratAssistant:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/BaccaratApp
+    dependencies:
+      - package: BaccaratAssistantKit
+        product: BaccaratDomain
+      - package: BaccaratAssistantKit
+        product: BaccaratData
+    info:
+      path: Config/Info.plist
+      properties:
+        CFBundleDisplayName: Baccarat Assistant
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSApplicationCategoryType: public.app-category.utilities
+        LSMinimumSystemVersion: "14.0"
+    entitlements:
+      path: Config/BaccaratAssistant.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-write: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.baccarat.assistant
+        PRODUCT_NAME: Baccarat Assistant
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic

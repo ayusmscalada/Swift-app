@@ -1,0 +1,22 @@
+{
+  "name": "example-synthetic",
+  "source": "Synthetic example computed by hand from the standard road rules. Replace with sessions recorded from the Windows app.",
+  "settings": { "strategy": "s9", "baseUnit": "10", "bankroll": "1000" },
+  "hands": [
+    { "result": "B" },
+    { "result": "B" },
+    { "result": "P" },
+    { "result": "T" },
+    { "result": "B" },
+    { "result": "B" },
+    { "result": "B" },
+    { "result": "P" },
+    { "result": "P" }
+  ],
+  "roads": {
+    "bigRoad": "BB|P|BBB|PP",
+    "bigEyeBoy": "bb|r|b|r",
+    "smallRoad": "r|bbb",
+    "cockroachPig": "r"
+  }
+}
