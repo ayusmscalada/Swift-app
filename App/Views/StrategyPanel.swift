@@ -3,10 +3,16 @@ import SwiftUI
 /// Strategy choice, money settings and the suggestion for the next hand.
 struct StrategyPanel: View {
     @Environment(GameViewModel.self) private var game
+    /// Settings above the suggestion instead of beside it, for narrow windows.
+    var isStacked = false
 
     var body: some View {
+        let layout = isStacked
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
+
         GroupBox("Strategy") {
-            HStack(alignment: .top, spacing: 16) {
+            layout {
                 Form {
                     Picker("Strategy", selection: Binding(get: { game.strategyID }, set: { game.setStrategy($0) })) {
                         ForEach(StrategyRegistry.all, id: \.self) { id in
@@ -36,7 +42,7 @@ struct StrategyPanel: View {
                         }
                     }
                 }
-                .frame(maxWidth: 280)
+                .frame(maxWidth: isStacked ? .infinity : 280)
 
                 suggestionCard
             }

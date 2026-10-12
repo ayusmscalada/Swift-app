@@ -4,20 +4,25 @@ import SwiftUI
 /// Sizes, colours and marker styles are to be matched to the original's screenshots.
 struct RoadmapBoard: View {
     @Environment(GameViewModel.self) private var game
+    /// Roads one under another instead of side by side, for narrow windows.
+    var isStacked = false
 
     var body: some View {
         let roads = RoadmapViewModel(snapshot: game.roads, bigRoadRows: game.bigRoadRows)
+        let row = isStacked
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
 
         GroupBox("Roadmaps") {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 12) {
+                row {
                     labelled("Bead Plate") { BeadPlateView(cells: roads.beadPlate) }
-                        .frame(width: 260)
+                        .frame(width: isStacked ? nil : 260)
                     labelled("Big Road") {
                         BigRoadView(cells: roads.bigRoad, leadingTies: roads.leadingTies, rows: roads.bigRoadRows)
                     }
                 }
-                HStack(alignment: .top, spacing: 12) {
+                row {
                     ForEach(DerivedRoadKind.allCases, id: \.self) { kind in
                         labelled(kind.title) { DerivedRoadView(kind: kind, cells: roads.derived(kind)) }
                     }

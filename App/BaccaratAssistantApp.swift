@@ -15,7 +15,7 @@ struct BaccaratAssistantApp: App {
         WindowGroup("Baccarat Assistant") {
             MainView()
                 .environment(game)
-                .frame(minWidth: 1100, minHeight: 720)
+                .frame(minWidth: 720, minHeight: 520)
                 .onAppear { NSApplication.shared.activate(ignoringOtherApps: true) }
         }
         .commands {

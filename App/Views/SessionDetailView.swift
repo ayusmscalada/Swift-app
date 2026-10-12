@@ -2,24 +2,43 @@ import SwiftUI
 
 /// The main working screen: input and strategy on top, roads in the middle, history and stats below.
 /// Layout is provisional until it is matched to the original's screenshots.
+///
+/// The screen scrolls vertically, and side-by-side panels stack when the window is narrow,
+/// so nothing is cut off at any window size.
 struct SessionDetailView: View {
     @Environment(GameViewModel.self) private var game
     @FocusState private var isFocused: Bool
 
+    /// Below this width, side-by-side panels are stacked.
+    private static let wideLayoutWidth: CGFloat = 1000
+    /// Below this width, the Strategy panel also stacks its settings above the suggestion.
+    private static let narrowLayoutWidth: CGFloat = 640
+
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                GameInputView()
-                StrategyPanel()
-            }
-            RoadmapBoard()
-            HStack(alignment: .top, spacing: 12) {
-                HistoryTableView()
-                StatsPanel()
-                    .frame(width: 280)
+        GeometryReader { proxy in
+            let isWide = proxy.size.width >= Self.wideLayoutWidth
+            let isNarrow = proxy.size.width < Self.narrowLayoutWidth
+            let row = isWide
+                ? AnyLayout(HStackLayout(alignment: .top, spacing: 12))
+                : AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+
+            ScrollView(.vertical) {
+                VStack(spacing: 12) {
+                    row {
+                        GameInputView()
+                        StrategyPanel(isStacked: isNarrow)
+                    }
+                    RoadmapBoard(isStacked: isNarrow)
+                    row {
+                        HistoryTableView()
+                            .frame(height: 320)
+                        StatsPanel()
+                            .frame(minWidth: isWide ? 280 : nil, maxWidth: isWide ? 280 : .infinity)
+                    }
+                }
+                .padding(12)
             }
         }
-        .padding(12)
         // B / P / T enter results while no text field has focus; a focused field keeps its keys.
         .focusable()
         .focusEffectDisabled()
