@@ -1,6 +1,5 @@
 import Foundation
 import GRDB
-import BaccaratDomain
 
 // Money is stored as TEXT holding a Decimal, and dates as ISO-8601 TEXT, so values
 // round-trip exactly. Typed accessors convert at the edge.

@@ -1,6 +1,5 @@
 import SwiftUI
 import UniformTypeIdentifiers
-import BaccaratData
 
 struct SessionListView: View {
     @Environment(GameViewModel.self) private var game

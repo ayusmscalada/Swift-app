@@ -1,5 +1,4 @@
 import Foundation
-import BaccaratData
 
 /// Dependency wiring: one database and the repositories built on it.
 @MainActor

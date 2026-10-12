@@ -6,3 +6,4 @@ xcuserdata/
 *.xcodeproj/
 Package.resolved.orig
 Config/Info.plist
+Packages/GRDB.swift/

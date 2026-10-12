@@ -1,5 +1,4 @@
 import SwiftUI
-import BaccaratDomain
 
 /// Strategy choice, money settings and the suggestion for the next hand.
 struct StrategyPanel: View {

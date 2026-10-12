@@ -1,6 +1,5 @@
 import Foundation
 import GRDB
-import BaccaratDomain
 
 public enum LegacyFileFormat: String, Sendable {
     case sqlite = "SQLite 3 database"

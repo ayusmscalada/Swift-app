@@ -1,6 +1,7 @@
 # XcodeGen spec for the sandboxed .app target.
 #   brew install xcodegen && xcodegen generate && open BaccaratAssistant.xcodeproj
-# The app target compiles App/ and links BaccaratDomain and BaccaratData from Packages/BaccaratKit.
+# The app target compiles all of App/ (views, Domain/, Data/) and links GRDB.
+# GRDB is a local copy: mkdir -p Packages && cd Packages && git clone --depth 1 https://github.com/groue/GRDB.swift.git
 name: BaccaratAssistant
 options:
   bundleIdPrefix: com.example.baccarat
@@ -13,8 +14,8 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     SWIFT_STRICT_CONCURRENCY: targeted
 packages:
-  BaccaratKit:
-    path: Packages/BaccaratKit
+  GRDB:
+    path: Packages/GRDB.swift
 targets:
   BaccaratAssistant:
     type: application
@@ -22,10 +23,8 @@ targets:
     sources:
       - path: App
     dependencies:
-      - package: BaccaratKit
-        product: BaccaratDomain
-      - package: BaccaratKit
-        product: BaccaratData
+      - package: GRDB
+        product: GRDB
     info:
       path: Config/Info.plist
       properties:

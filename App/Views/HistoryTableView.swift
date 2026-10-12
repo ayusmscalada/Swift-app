@@ -1,5 +1,4 @@
 import SwiftUI
-import BaccaratDomain
 
 /// Hands of the current shoe with the suggestion made before each one.
 /// Right-click a row to change its result or delete it; everything after it is recalculated.

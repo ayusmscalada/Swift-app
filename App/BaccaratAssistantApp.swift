@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-import BaccaratDomain
 
 @main
 struct BaccaratAssistantApp: App {

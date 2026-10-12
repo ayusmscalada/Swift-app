@@ -1,7 +1,5 @@
 import Foundation
 import Observation
-import BaccaratDomain
-import BaccaratData
 
 /// Owns the open session. Every change is written to SQLite first, then the session is
 /// reloaded and replayed through `SessionEngine`, so the screen always shows exactly what

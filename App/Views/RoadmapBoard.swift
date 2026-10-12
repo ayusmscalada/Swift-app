@@ -1,5 +1,4 @@
 import SwiftUI
-import BaccaratDomain
 
 /// Bead Plate, Big Road, the three derived roads and the Ask predictions.
 /// Sizes, colours and marker styles are to be matched to the original's screenshots.

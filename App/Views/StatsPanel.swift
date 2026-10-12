@@ -1,5 +1,4 @@
 import SwiftUI
-import BaccaratDomain
 
 struct StatsPanel: View {
     @Environment(GameViewModel.self) private var game

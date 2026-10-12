@@ -1,5 +1,4 @@
 import Foundation
-import BaccaratDomain
 
 /// Turns a roads snapshot into drawn grid cells for the roadmap views.
 struct RoadmapViewModel {

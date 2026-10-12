@@ -4,7 +4,11 @@ A native macOS rebuild of the client's Windows Baccarat analysis tool: Swift 5 l
 
 ## Build and run
 
-You need a Mac with Xcode 26.6.
+You need a Mac with Xcode 26.6. GRDB is used from a local copy; get it once with:
+
+```sh
+mkdir -p Packages && cd Packages && git clone --depth 1 https://github.com/groue/GRDB.swift.git
+```
 
 **App project (recommended):** install [XcodeGen](https://github.com/yonaskolb/XcodeGen) and generate the project:
 
@@ -18,25 +22,21 @@ Set your signing team in the target, then run (⌘R). For delivery, Archive and 
 
 **Quick run without XcodeGen:** open the root `Package.swift` in Xcode, pick the `BaccaratApp` scheme and run.
 
-**Tests:** open `Packages/BaccaratKit/Package.swift` in Xcode and press ⌘U, or run `swift test` in `Packages/BaccaratKit`.
-
 ## Layout
 
 ```
-App/                      SwiftUI app: view models, views, support
-Packages/BaccaratKit/     Local Swift package (its own folder, so Xcode can load it)
-  Sources/
-    BaccaratDomain/       Pure logic. No UI or database imports.
-      Models/             Outcome, Hand, GameHistory
-      Roadmaps/           Big Road, derived roads, grid layout (dragon tail), Ask predictions
-      Patterns/           Streak and chop detection
-      Betting/            Payout rules, BetLedger, statistics
-      Strategies/         BaccaratStrategy protocol, registry, Strategy1–6 and 9
-      Session/            SessionEngine: replays a session from its results
-    BaccaratData/         GRDB schema and migrations, repositories, legacy-file inspection, CSV export
-  Tests/
-    BaccaratDomainTests/  Road, payout, ledger, pattern and engine tests; Reference/ parity sessions
-    BaccaratDataTests/    Repository, settings, importer and CSV tests (in-memory SQLite)
+App/                      The whole app, one target
+  Views/, ViewModels/,
+  Support/                SwiftUI views, view models, theme, CSV document
+  Domain/                 Pure logic. No UI or database imports.
+    Models/               Outcome, Hand, GameHistory
+    Roadmaps/             Big Road, derived roads, grid layout (dragon tail), Ask predictions
+    Patterns/             Streak and chop detection
+    Betting/              Payout rules, BetLedger, statistics
+    Strategies/           BaccaratStrategy protocol, registry, Strategy1–6 and 9
+    Session/              SessionEngine: replays a session from its results
+  Data/                   GRDB schema and migrations, repositories, legacy-file inspection, CSV export
+Packages/GRDB.swift/      Local copy of GRDB (not committed; see above)
 project.yml               XcodeGen spec for the .app
 Docs/
   Strategies/       One rule spec per strategy (template provided)
@@ -61,7 +61,3 @@ Nothing derived is stored. Roads, strategy state, the ledger and statistics are 
 - **Road details:** tie placement, Bead Plate presence and grid sizes follow standard rules until they are checked against the original.
 - **Pattern rules, report formats, settings** beyond the above, and **legacy data import mapping** depend on the EXE, the videos and the data files.
 - **UI layout** is provisional until it is matched to the original's screenshots.
-
-## Parity testing
-
-Record sessions from the Windows app as JSON in `Packages/BaccaratKit/Tests/BaccaratDomainTests/Reference/` (format in that folder's README). Every test run replays them and compares roads, suggestions, net and balance hand by hand.

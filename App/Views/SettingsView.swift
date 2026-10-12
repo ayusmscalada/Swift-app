@@ -1,5 +1,4 @@
 import SwiftUI
-import BaccaratDomain
 
 /// App-wide settings. More options are added as they are found in the original's
 /// configuration files and settings screens, with the same defaults.

@@ -1,5 +1,4 @@
 import SwiftUI
-import BaccaratData
 
 /// Shows what each of the client's Windows files appears to be (week-1 inventory).
 struct LegacyInspectorView: View {

@@ -1,6 +1,5 @@
 import Foundation
 import GRDB
-import BaccaratDomain
 
 public struct SessionRepository {
     private let database: AppDatabase

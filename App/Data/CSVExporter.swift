@@ -1,5 +1,4 @@
 import Foundation
-import BaccaratDomain
 
 public enum CSVExporter {
     /// One row per hand: the result, the suggestion made before it, and what it paid.

@@ -1,5 +1,4 @@
 import SwiftUI
-import BaccaratDomain
 
 /// Session report plus a table of all saved sessions. Export writes the hand-by-hand CSV.
 /// Report layout and export formats are to be matched to the original during analysis.

@@ -1,5 +1,4 @@
 import SwiftUI
-import BaccaratDomain
 
 extension Outcome {
     var title: String {
