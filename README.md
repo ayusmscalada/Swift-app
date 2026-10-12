@@ -6,9 +6,7 @@ A native macOS rebuild of the client's Windows Baccarat analysis tool: Swift 5 l
 
 You need a Mac with Xcode 26.6.
 
-**Quick start:** open `Package.swift` in Xcode, pick the `BaccaratApp` scheme and run (⌘R). Run the tests with ⌘U, or `swift test` in Terminal.
-
-**Sandboxed .app (for delivery):** install [XcodeGen](https://github.com/yonaskolb/XcodeGen) and generate the project:
+**App project (recommended):** install [XcodeGen](https://github.com/yonaskolb/XcodeGen) and generate the project:
 
 ```sh
 brew install xcodegen
@@ -16,24 +14,30 @@ xcodegen generate
 open BaccaratAssistant.xcodeproj
 ```
 
-Set your signing team in the target, then Archive and notarise for a Developer ID build.
+Set your signing team in the target, then run (⌘R). For delivery, Archive and notarise a Developer ID build. Run `xcodegen generate` again after editing `project.yml` or adding files.
+
+**Quick run without XcodeGen:** open the root `Package.swift` in Xcode, pick the `BaccaratApp` scheme and run.
+
+**Tests:** open `Packages/BaccaratKit/Package.swift` in Xcode and press ⌘U, or run `swift test` in `Packages/BaccaratKit`.
 
 ## Layout
 
 ```
-Sources/
-  BaccaratDomain/   Pure logic. No UI or database imports.
-    Models/         Outcome, Hand, GameHistory
-    Roadmaps/       Big Road, derived roads, grid layout (dragon tail), Ask predictions
-    Patterns/       Streak and chop detection
-    Betting/        Payout rules, BetLedger, statistics
-    Strategies/     BaccaratStrategy protocol, registry, Strategy1–6 and 9
-    Session/        SessionEngine: replays a session from its results
-  BaccaratData/     GRDB schema and migrations, repositories, legacy-file inspection, CSV export
-  BaccaratApp/      SwiftUI app: view models and views
-Tests/
-  BaccaratDomainTests/   Road, payout, ledger, pattern and engine tests; Reference/ parity sessions
-  BaccaratDataTests/     Repository, settings, importer and CSV tests (in-memory SQLite)
+App/                      SwiftUI app: view models, views, support
+Packages/BaccaratKit/     Local Swift package (its own folder, so Xcode can load it)
+  Sources/
+    BaccaratDomain/       Pure logic. No UI or database imports.
+      Models/             Outcome, Hand, GameHistory
+      Roadmaps/           Big Road, derived roads, grid layout (dragon tail), Ask predictions
+      Patterns/           Streak and chop detection
+      Betting/            Payout rules, BetLedger, statistics
+      Strategies/         BaccaratStrategy protocol, registry, Strategy1–6 and 9
+      Session/            SessionEngine: replays a session from its results
+    BaccaratData/         GRDB schema and migrations, repositories, legacy-file inspection, CSV export
+  Tests/
+    BaccaratDomainTests/  Road, payout, ledger, pattern and engine tests; Reference/ parity sessions
+    BaccaratDataTests/    Repository, settings, importer and CSV tests (in-memory SQLite)
+project.yml               XcodeGen spec for the .app
 Docs/
   Strategies/       One rule spec per strategy (template provided)
   RuleQuestionLog.md
@@ -60,4 +64,4 @@ Nothing derived is stored. Roads, strategy state, the ledger and statistics are 
 
 ## Parity testing
 
-Record sessions from the Windows app as JSON in `Tests/BaccaratDomainTests/Reference/` (format in that folder's README). Every test run replays them and compares roads, suggestions, net and balance hand by hand.
+Record sessions from the Windows app as JSON in `Packages/BaccaratKit/Tests/BaccaratDomainTests/Reference/` (format in that folder's README). Every test run replays them and compares roads, suggestions, net and balance hand by hand.

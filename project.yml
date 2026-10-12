@@ -1,6 +1,6 @@
 # XcodeGen spec for the sandboxed .app target.
 #   brew install xcodegen && xcodegen generate && open BaccaratAssistant.xcodeproj
-# The app target compiles Sources/BaccaratApp and links the local package's libraries.
+# The app target compiles App/ and links BaccaratDomain and BaccaratData from Packages/BaccaratKit.
 name: BaccaratAssistant
 options:
   bundleIdPrefix: com.example.baccarat
@@ -13,18 +13,18 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     SWIFT_STRICT_CONCURRENCY: targeted
 packages:
-  BaccaratAssistantKit:
-    path: .
+  BaccaratKit:
+    path: Packages/BaccaratKit
 targets:
   BaccaratAssistant:
     type: application
     platform: macOS
     sources:
-      - path: Sources/BaccaratApp
+      - path: App
     dependencies:
-      - package: BaccaratAssistantKit
+      - package: BaccaratKit
         product: BaccaratDomain
-      - package: BaccaratAssistantKit
+      - package: BaccaratKit
         product: BaccaratData
     info:
       path: Config/Info.plist
