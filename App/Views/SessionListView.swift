@@ -14,10 +14,15 @@ struct SessionListView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(session.name)
                         .lineLimit(1)
+                        .truncationMode(.tail)
                     Text(session.strategy.title)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .help(session.name)
                 .tag(session.id)
                 .contextMenu {
                     if let id = session.id {
@@ -32,6 +37,9 @@ struct SessionListView: View {
                 }
             }
         }
+        // Sidebar style keeps the first row below the toolbar; the list scrolls when it is full.
+        .listStyle(.sidebar)
+        .contentMargins(.top, 8, for: .scrollContent)
         .navigationTitle("Sessions")
         .toolbar {
             ToolbarItem {

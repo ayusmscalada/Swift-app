@@ -9,7 +9,7 @@ struct MainView: View {
 
         NavigationSplitView {
             SessionListView()
-                .navigationSplitViewColumnWidth(min: 200, ideal: 240)
+                .navigationSplitViewColumnWidth(min: 180, ideal: 240, max: 360)
         } detail: {
             if game.session != nil {
                 SessionDetailView()
