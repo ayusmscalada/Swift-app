@@ -41,7 +41,7 @@ final class GameViewModel {
     // MARK: Derived state
 
     var session: SessionRecord? { loaded?.session }
-    var strategyID: StrategyID { session?.strategy ?? .s9 }
+    var strategyID: StrategyID { session?.strategy ?? .martingale }
     var bankroll: Decimal { session?.bankroll ?? 0 }
     var currentShoeNumber: Int { loaded?.shoes.count ?? 0 }
     var currentShoe: LoadedShoe? { loaded?.shoes.last }
@@ -188,6 +188,18 @@ final class GameViewModel {
         guard baseUnit > 0 else { return }
         var settings = strategySettings
         settings.baseUnit = baseUnit
+        perform {
+            try env.settings.save(settings, for: strategyID)
+            reload(persistBets: true)
+        }
+    }
+
+    /// Saves one strategy setting. An empty value restores the default (or turns a stop rule off).
+    func setParameter(_ key: String, to value: String) {
+        let trimmed = value.trimmingCharacters(in: .whitespaces)
+        var settings = strategySettings
+        guard (settings.parameters[key] ?? "") != trimmed else { return }
+        settings.parameters[key] = trimmed.isEmpty ? nil : trimmed
         perform {
             try env.settings.save(settings, for: strategyID)
             reload(persistBets: true)

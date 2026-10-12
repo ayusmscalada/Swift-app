@@ -1,9 +1,25 @@
 import Foundation
 
 public enum StrategyID: String, Codable, CaseIterable, Hashable, Sendable {
-    case s1, s2, s3, s4, s5, s6, s9
+    case martingale, grinding, sequence, pattern
+    case oddEven = "odd_even"
+    case oddDiff = "odd_diff"
+    case oddLooser = "odd_looser"
+    case oddIsGod = "odd_is_god"
 
-    public var title: String { "Strategy \(rawValue.dropFirst())" }
+    /// The name the original app uses.
+    public var title: String {
+        switch self {
+        case .martingale: return "Martingale"
+        case .grinding: return "Grinding"
+        case .sequence: return "Sequence"
+        case .pattern: return "PATTERN"
+        case .oddEven: return "Odd Even"
+        case .oddDiff: return "ODD Diff"
+        case .oddLooser: return "ODD Looser"
+        case .oddIsGod: return "ODD is God"
+        }
+    }
 }
 
 /// User-set parameters for one strategy. `parameters` holds strategy-specific values
@@ -43,6 +59,8 @@ public protocol BaccaratStrategy {
     static var id: StrategyID { get }
     /// False until the strategy's rule spec is signed off and implemented.
     static var isImplemented: Bool { get }
+    /// Settings shown in the Strategy panel, stored in `StrategySettings.parameters`.
+    static var parameters: [StrategyParameter] { get }
 
     var settings: StrategySettings { get set }
 
@@ -58,6 +76,10 @@ public protocol BaccaratStrategy {
 /// Default behaviour for a strategy whose rules are not yet specified: it never bets,
 /// so the app can never show an invented rule. Remove this conformance when implementing.
 public protocol PendingSpecStrategy: BaccaratStrategy {}
+
+extension BaccaratStrategy {
+    public static var parameters: [StrategyParameter] { [] }
+}
 
 extension PendingSpecStrategy {
     public static var isImplemented: Bool { false }

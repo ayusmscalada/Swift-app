@@ -24,6 +24,17 @@ struct StrategyPanel: View {
                         value: Binding(get: { game.bankroll }, set: { game.setBankroll($0) }),
                         format: .number
                     )
+
+                    let parameters = StrategyRegistry.parameters(for: game.strategyID)
+                    ForEach(parameters.filter { !StrategyParameter.sessionRules.contains($0) }, id: \.key) {
+                        ParameterField(parameter: $0)
+                    }
+                    let stopRules = parameters.filter { StrategyParameter.sessionRules.contains($0) }
+                    if !stopRules.isEmpty {
+                        DisclosureGroup("Stop and pause") {
+                            ForEach(stopRules, id: \.key) { ParameterField(parameter: $0) }
+                        }
+                    }
                 }
                 .frame(maxWidth: 280)
 
@@ -67,5 +78,37 @@ struct StrategyPanel: View {
             }
         }
         .frame(minWidth: 220, maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// One strategy setting. Saved on Return or when the field loses focus, not on every keystroke.
+private struct ParameterField: View {
+    @Environment(GameViewModel.self) private var game
+    let parameter: StrategyParameter
+    @State private var text = ""
+    @FocusState private var isFocused: Bool
+
+    private var stored: String { game.strategySettings.parameters[parameter.key] ?? "" }
+
+    var body: some View {
+        TextField(
+            parameter.title,
+            text: $text,
+            prompt: Text(parameter.defaultValue.isEmpty ? "Off" : parameter.defaultValue)
+        )
+        .focused($isFocused)
+        .help(parameter.help)
+        .onSubmit(save)
+        .onAppear { text = stored }
+        .onChange(of: isFocused) { _, focused in
+            if !focused { save() }
+        }
+        .onChange(of: stored) { _, value in
+            if !isFocused { text = value }
+        }
+    }
+
+    private func save() {
+        game.setParameter(parameter.key, to: text)
     }
 }

@@ -1,18 +1,19 @@
 import Foundation
 
 public enum StrategyRegistry {
-    /// V1 strategies in priority order.
-    public static let all: [StrategyID] = [.s9, .s1, .s2, .s3, .s4, .s5, .s6]
+    /// Strategies in the order the picker shows them.
+    public static let all: [StrategyID] = StrategyID.allCases
 
     public static func strategyType(for id: StrategyID) -> any BaccaratStrategy.Type {
         switch id {
-        case .s1: return Strategy1.self
-        case .s2: return Strategy2.self
-        case .s3: return Strategy3.self
-        case .s4: return Strategy4.self
-        case .s5: return Strategy5.self
-        case .s6: return Strategy6.self
-        case .s9: return Strategy9.self
+        case .martingale: return MartingaleStrategy.self
+        case .grinding: return GrindingStrategy.self
+        case .sequence: return SequenceStrategy.self
+        case .pattern: return PatternStrategy.self
+        case .oddEven: return OddEvenStrategy.self
+        case .oddDiff: return OddDiffStrategy.self
+        case .oddLooser: return OddLooserStrategy.self
+        case .oddIsGod: return OddIsGodStrategy.self
         }
     }
 
@@ -22,5 +23,9 @@ public enum StrategyRegistry {
 
     public static func isImplemented(_ id: StrategyID) -> Bool {
         strategyType(for: id).isImplemented
+    }
+
+    public static func parameters(for id: StrategyID) -> [StrategyParameter] {
+        strategyType(for: id).parameters
     }
 }

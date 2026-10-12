@@ -33,7 +33,7 @@ App/                      The whole app, one target
     Roadmaps/             Big Road, derived roads, grid layout (dragon tail), Ask predictions
     Patterns/             Streak and chop detection
     Betting/              Payout rules, BetLedger, statistics
-    Strategies/           BaccaratStrategy protocol, registry, Strategy1–6 and 9
+    Strategies/           BaccaratStrategy protocol, registry, shared stake and stop rules, one file per strategy
     Session/              SessionEngine: replays a session from its results
   Data/                   GRDB schema and migrations, repositories, legacy-file inspection, CSV export
 Packages/GRDB.swift/      Local copy of GRDB (not committed; see above)
@@ -57,7 +57,7 @@ Nothing derived is stored. Roads, strategy state, the ledger and statistics are 
 
 ## Waiting on analysis of the original
 
-- **Strategies 1–6 and 9** are placeholders that never bet. Each needs a signed-off spec (`Docs/Strategies/_Template.md`) before it is implemented, so the app never shows an invented rule.
+- **Strategies:** Martingale, Grinding, Sequence, PATTERN, Odd Even, ODD Diff, ODD Looser and ODD is God are implemented, with stop-profit, stop-loss, losses-in-a-row and pause rules. Stake movements match the original's logs; some side rules are assumed until the client confirms them (`Docs/Strategies/Strategies.md`, `Docs/RuleQuestionLog.md`).
 - **Road details:** tie placement, Bead Plate presence and grid sizes follow standard rules until they are checked against the original.
 - **Pattern rules, report formats, settings** beyond the above, and **legacy data import mapping** depend on the EXE, the videos and the data files.
 - **UI layout** is provisional until it is matched to the original's screenshots.

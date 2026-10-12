@@ -29,7 +29,7 @@ public struct SessionRecord: Codable, FetchableRecord, MutablePersistableRecord,
         id = inserted.rowID
     }
 
-    public var strategy: StrategyID { StrategyID(rawValue: strategyID) ?? .s9 }
+    public var strategy: StrategyID { StrategyID(rawValue: strategyID) ?? .martingale }
     public var bankroll: Decimal { Decimal(string: startBankroll) ?? 0 }
 }
 
