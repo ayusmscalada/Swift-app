@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// The main working screen: input and strategy on top, roads in the middle, history and stats below.
 /// Layout is provisional until it is matched to the original's screenshots.
@@ -8,6 +9,12 @@ import SwiftUI
 struct SessionDetailView: View {
     @Environment(GameViewModel.self) private var game
     @FocusState private var isFocused: Bool
+
+    /// True while a text field is being edited: AppKit then makes its field editor (an `NSText`)
+    /// the first responder, and SwiftUI still passes the key press up to this view.
+    private static var isEditingText: Bool {
+        NSApp.keyWindow?.firstResponder is NSText
+    }
 
     /// Below this width, side-by-side panels are stacked.
     private static let wideLayoutWidth: CGFloat = 1000
@@ -45,7 +52,8 @@ struct SessionDetailView: View {
         .focused($isFocused)
         .onAppear { isFocused = true }
         .onKeyPress(characters: CharacterSet(charactersIn: "bptBPT")) { press in
-            guard let outcome = Outcome(token: press.characters) else { return .ignored }
+            // Typing into a text field (strategy settings, bankroll, …) must not enter a result.
+            guard !Self.isEditingText, let outcome = Outcome(token: press.characters) else { return .ignored }
             game.enter(outcome)
             return .handled
         }
