@@ -58,11 +58,37 @@ final class GameViewModel {
     var currentShoeRows: [HistoryRow] {
         guard let shoe = currentShoe else { return [] }
         let shoeIndex = (loaded?.shoes.count ?? 1) - 1
-        let entries = ledger.entries.filter { $0.shoeIndex == shoeIndex }
-        return zip(shoe.hands, entries).compactMap { hand, entry in
+        let counts = streakCounts
+        let rows = ledger.entries.indices.filter { ledger.entries[$0].shoeIndex == shoeIndex }
+        return zip(shoe.hands, rows).compactMap { hand, index in
             guard let id = hand.id else { return nil }
-            return HistoryRow(id: id, number: entry.handIndex + 1, hand: hand.hand, entry: entry)
+            let entry = ledger.entries[index]
+            return HistoryRow(id: id, number: entry.handIndex + 1, hand: hand.hand, entry: entry, count: counts[index])
         }
+    }
+
+    /// Wins (positive) or losses (negative) in a row after each ledger entry, as the original's
+    /// Count column shows. A push or a hand without a bet leaves the count as it was.
+    private var streakCounts: [Int] {
+        var count = 0
+        return ledger.entries.map { entry in
+            if entry.isBet {
+                if entry.net > 0 {
+                    count = count > 0 ? count + 1 : 1
+                } else if entry.net < 0 {
+                    count = count < 0 ? count - 1 : -1
+                }
+            }
+            return count
+        }
+    }
+
+    /// Time from the session's first hand to its last.
+    var sessionDuration: TimeInterval {
+        let formatter = ISO8601DateFormatter()
+        let times = (loaded?.shoes ?? []).flatMap(\.hands).compactMap { formatter.date(from: $0.enteredAt) }
+        guard let first = times.min(), let last = times.max() else { return 0 }
+        return last.timeIntervalSince(first)
     }
 
     // MARK: Sessions
@@ -346,6 +372,8 @@ struct HistoryRow: Identifiable, Hashable {
     let number: Int
     let hand: Hand
     let entry: LedgerEntry
+    /// Wins (positive) or losses (negative) in a row, counted across the session.
+    let count: Int
 }
 
 struct SessionSummaryRow: Identifiable, Hashable {

@@ -8,7 +8,8 @@ public struct MartingaleStrategy: BaccaratStrategy {
 
     static let firstSide = StrategyParameter(
         "firstSide", "First bet on", default: "P",
-        help: "B or P: the side to bet before the shoe has a winner."
+        help: "B or P: the side to bet before the shoe has a winner.",
+        choices: StrategyParameter.sideChoices
     )
     static let startUnits = StrategyParameter(
         "startUnits", "Starting stake (units)", default: "1",

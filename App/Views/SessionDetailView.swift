@@ -1,11 +1,12 @@
 import SwiftUI
 import AppKit
 
-/// The main working screen: input and strategy on top, roads in the middle, history and stats below.
-/// Layout is provisional until it is matched to the original's screenshots.
+/// The main working screen, arranged like the original's main screen but cleaner:
+/// strategy settings on the left, entry, bet history and roads in the middle, and session,
+/// next bet, balance and statistics on the right.
 ///
-/// The screen scrolls vertically, and side-by-side panels stack when the window is narrow,
-/// so nothing is cut off at any window size.
+/// The screen scrolls vertically. On medium windows the right column joins the middle one,
+/// and on narrow windows everything is one column, so nothing is cut off at any size.
 struct SessionDetailView: View {
     @Environment(GameViewModel.self) private var game
     @FocusState private var isFocused: Bool
@@ -16,31 +17,40 @@ struct SessionDetailView: View {
         NSApp.keyWindow?.firstResponder is NSText
     }
 
-    /// Below this width, side-by-side panels are stacked.
-    private static let wideLayoutWidth: CGFloat = 1000
-    /// Below this width, the Strategy panel also stacks its settings above the suggestion.
-    private static let narrowLayoutWidth: CGFloat = 640
+    /// From this width: three columns.
+    private static let wideLayoutWidth: CGFloat = 1180
+    /// From this width: two columns (strategy, then everything else).
+    private static let mediumLayoutWidth: CGFloat = 780
+    private static let strategyColumnWidth: CGFloat = 320
+    private static let infoColumnWidth: CGFloat = 270
 
     var body: some View {
         GeometryReader { proxy in
-            let isWide = proxy.size.width >= Self.wideLayoutWidth
-            let isNarrow = proxy.size.width < Self.narrowLayoutWidth
-            let row = isWide
-                ? AnyLayout(HStackLayout(alignment: .top, spacing: 12))
-                : AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
-
+            let width = proxy.size.width
             ScrollView(.vertical) {
-                VStack(spacing: 12) {
-                    row {
-                        GameInputView()
-                        StrategyPanel(isStacked: isNarrow)
-                    }
-                    RoadmapBoard(isStacked: isNarrow)
-                    row {
-                        HistoryTableView()
-                            .frame(height: 320)
-                        StatsPanel()
-                            .frame(minWidth: isWide ? 280 : nil, maxWidth: isWide ? 280 : .infinity)
+                Group {
+                    if width >= Self.wideLayoutWidth {
+                        HStack(alignment: .top, spacing: 12) {
+                            StrategyPanel().frame(width: Self.strategyColumnWidth)
+                            playColumn(stackRoads: false)
+                            infoColumn.frame(width: Self.infoColumnWidth)
+                        }
+                    } else if width >= Self.mediumLayoutWidth {
+                        HStack(alignment: .top, spacing: 12) {
+                            StrategyPanel().frame(width: Self.strategyColumnWidth)
+                            VStack(spacing: 12) {
+                                SessionInfoPanel()
+                                playColumn(stackRoads: true)
+                                StatsPanel()
+                            }
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            SessionInfoPanel()
+                            playColumn(stackRoads: true)
+                            StrategyPanel()
+                            StatsPanel()
+                        }
                     }
                 }
                 .padding(12)
@@ -65,6 +75,25 @@ struct SessionDetailView: View {
                     Label("Report", systemImage: "chart.bar.doc.horizontal")
                 }
             }
+        }
+    }
+
+    /// Result entry, bet history and roads.
+    private func playColumn(stackRoads: Bool) -> some View {
+        VStack(spacing: 12) {
+            GameInputView()
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HistoryTableView()
+                .frame(height: 360)
+            RoadmapBoard(isStacked: stackRoads)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var infoColumn: some View {
+        VStack(spacing: 12) {
+            SessionInfoPanel()
+            StatsPanel()
         }
     }
 }

@@ -9,7 +9,8 @@ public struct OddEvenStrategy: BaccaratStrategy {
 
     static let oddSide = StrategyParameter(
         "oddSide", "Odd results on", default: "B",
-        help: "B or P: the side for odd-numbered results. Even-numbered results get the other side."
+        help: "B or P: the side for odd-numbered results. Even-numbered results get the other side.",
+        choices: StrategyParameter.sideChoices
     )
     static let amounts = StrategyParameter(
         "amounts", "Stakes (units)", default: "1,2,3,6,12,24",

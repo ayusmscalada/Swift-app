@@ -7,18 +7,24 @@ public struct StrategyParameter: Hashable, Sendable {
     /// Used when the value is empty or invalid. Empty means the rule is off.
     public let defaultValue: String
     public let help: String
+    /// When not empty, the value is picked from this list instead of typed.
+    public let choices: [String]
 
-    public init(_ key: String, _ title: String, default defaultValue: String, help: String) {
+    public init(_ key: String, _ title: String, default defaultValue: String, help: String, choices: [String] = []) {
         self.key = key
         self.title = title
         self.defaultValue = defaultValue
         self.help = help
+        self.choices = choices
     }
 }
 
 extension StrategyParameter {
-    // Stop and pause rules from the original's strategy files (stop_profit, stop_loss,
-    // stop_consecutive_loss, pause_consecutive_loss). Every strategy has them; empty means off.
+    static let sideChoices = ["P", "B"]
+    static let actionChoices = ["STOP BET", "REBET"]
+
+    // Stop and pause rules from the original's main screen and strategy files (stop_profit,
+    // stop_loss, consecutive win and loss counts). Every strategy has them; empty means off.
     public static let stopProfit = StrategyParameter(
         "stopProfit", "Stop profit", default: "",
         help: "Stop betting once the session is up by this amount of money. Empty: off."
@@ -27,24 +33,47 @@ extension StrategyParameter {
         "stopLoss", "Stop loss", default: "",
         help: "Stop betting once the session is down by this amount of money. Empty: off."
     )
-    public static let lossLimit = StrategyParameter(
-        "lossLimit", "Losses in a row", default: "",
-        help: "After this many losses in a row, apply the loss action. Empty: off."
+
+    public static let winAction = StrategyParameter(
+        "winAction", "Action", default: "STOP BET",
+        help: "STOP BET stops betting. REBET restarts the stake progression and keeps betting.",
+        choices: actionChoices
     )
+    public static let winLimit = StrategyParameter(
+        "winLimit", "After wins in a row", default: "",
+        help: "After this many wins in a row, apply the action. Empty: off."
+    )
+    public static let pauseAfterWins = StrategyParameter(
+        "pauseAfterWins", "Pause after wins in a row", default: "",
+        help: "After this many wins in a row, skip some hands. Empty: off."
+    )
+    public static let pauseWinHands = StrategyParameter(
+        "pauseWinHands", "Hands to skip", default: "",
+        help: "How many hands to skip when pausing after wins."
+    )
+
     public static let lossAction = StrategyParameter(
-        "lossAction", "Loss action", default: "STOP BET",
-        help: "STOP BET stops betting. REBET restarts the stake progression and keeps betting."
+        "lossAction", "Action", default: "STOP BET",
+        help: "STOP BET stops betting. REBET restarts the stake progression and keeps betting.",
+        choices: actionChoices
+    )
+    public static let lossLimit = StrategyParameter(
+        "lossLimit", "After losses in a row", default: "",
+        help: "After this many losses in a row, apply the action. Empty: off."
     )
     public static let pauseAfterLosses = StrategyParameter(
-        "pauseAfterLosses", "Pause after losses", default: "",
+        "pauseAfterLosses", "Pause after losses in a row", default: "",
         help: "After this many losses in a row, skip some hands. Empty: off."
     )
     public static let pauseHands = StrategyParameter(
         "pauseHands", "Hands to skip", default: "",
-        help: "How many hands to skip when pausing."
+        help: "How many hands to skip when pausing after losses."
     )
 
-    public static let sessionRules = [stopProfit, stopLoss, lossLimit, lossAction, pauseAfterLosses, pauseHands]
+    public static let moneyRules = [stopProfit, stopLoss]
+    public static let winRules = [winAction, winLimit, pauseAfterWins, pauseWinHands]
+    public static let lossRules = [lossAction, lossLimit, pauseAfterLosses, pauseHands]
+    public static let sessionRules = moneyRules + winRules + lossRules
 }
 
 extension StrategySettings {
@@ -169,8 +198,10 @@ struct BettingCore {
     /// Grind and run recovery: result of the current cycle or run, in units.
     private(set) var runProfit: Decimal = 0
     private var seenEntries = 0
+    private var winsInARow = 0
     private var lossesInARow = 0
     private var handsToPause = 0
+    private var pauseReason = ""
     private var stopReason: String?
 
     init(_ progression: StakeProgression) {
@@ -187,7 +218,7 @@ struct BettingCore {
             }
             let result = BetResult(net: entry.net)
             advance(after: result, net: entry.net, stake: entry.suggestion.units, baseUnit: settings.baseUnit)
-            applyLossRules(after: result, settings: settings)
+            applyStreakRules(after: result, settings: settings)
         }
         seenEntries = ledger.entries.count
 
@@ -219,7 +250,7 @@ struct BettingCore {
     private var blockedReason: String? {
         if let stopReason { return stopReason }
         if handsToPause > 0 {
-            return "Paused after \(lossesInARow) losses in a row: \(handsToPause) more hand\(handsToPause == 1 ? "" : "s")."
+            return "\(pauseReason): \(handsToPause) more hand\(handsToPause == 1 ? "" : "s")."
         }
         return nil
     }
@@ -265,22 +296,58 @@ struct BettingCore {
         }
     }
 
-    private mutating func applyLossRules(after result: BetResult, settings: StrategySettings) {
-        switch result {
-        case .win: lossesInARow = 0; return
-        case .push: return
-        case .loss: lossesInARow += 1
+    private enum StreakRuleOutcome {
+        case nothing, rebet, stop(Int), pause(Int)
+    }
+
+    /// The win or loss rule that applies after `count` results in a row.
+    private func streakRule(
+        count: Int,
+        limit: StrategyParameter,
+        action: StrategyParameter,
+        pauseAfter: StrategyParameter,
+        pauseHands: StrategyParameter,
+        settings: StrategySettings
+    ) -> StreakRuleOutcome {
+        if let limit = settings.positiveInt(limit), count >= limit {
+            return settings.value(action).uppercased() == "REBET" ? .rebet : .stop(limit)
         }
-        if let limit = settings.positiveInt(.lossLimit), lossesInARow >= limit {
-            if settings.value(.lossAction).uppercased() == "REBET" {
-                restart()
-                lossesInARow = 0
-            } else if stopReason == nil {
-                stopReason = "Stopped after \(limit) losses in a row."
+        if let after = settings.positiveInt(pauseAfter), count == after, let hands = settings.positiveInt(pauseHands) {
+            return .pause(hands)
+        }
+        return .nothing
+    }
+
+    private mutating func applyStreakRules(after result: BetResult, settings: StrategySettings) {
+        switch result {
+        case .push:
+            return
+        case .win:
+            winsInARow += 1
+            lossesInARow = 0
+            let rule = streakRule(
+                count: winsInARow, limit: .winLimit, action: .winAction,
+                pauseAfter: .pauseAfterWins, pauseHands: .pauseWinHands, settings: settings
+            )
+            switch rule {
+            case .nothing: break
+            case .rebet: restart(); winsInARow = 0
+            case let .stop(limit): if stopReason == nil { stopReason = "Stopped after \(limit) wins in a row." }
+            case let .pause(hands): handsToPause = hands; pauseReason = "Paused after \(winsInARow) wins in a row"
             }
-        } else if let count = settings.positiveInt(.pauseAfterLosses), lossesInARow == count,
-                  let hands = settings.positiveInt(.pauseHands) {
-            handsToPause = hands
+        case .loss:
+            lossesInARow += 1
+            winsInARow = 0
+            let rule = streakRule(
+                count: lossesInARow, limit: .lossLimit, action: .lossAction,
+                pauseAfter: .pauseAfterLosses, pauseHands: .pauseHands, settings: settings
+            )
+            switch rule {
+            case .nothing: break
+            case .rebet: restart(); lossesInARow = 0
+            case let .stop(limit): if stopReason == nil { stopReason = "Stopped after \(limit) losses in a row." }
+            case let .pause(hands): handsToPause = hands; pauseReason = "Paused after \(lossesInARow) losses in a row"
+            }
         }
     }
 

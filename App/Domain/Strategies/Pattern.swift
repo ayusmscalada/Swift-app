@@ -18,7 +18,8 @@ public struct PatternStrategy: BaccaratStrategy {
 
     static let firstSide = StrategyParameter(
         "firstSide", "First bet on", default: "P",
-        help: "B or P: the side for the very first bet of the session."
+        help: "B or P: the side for the very first bet of the session.",
+        choices: StrategyParameter.sideChoices
     )
     static let maxBet = StrategyParameter(
         "maxBet", "Run ends at bet (units)", default: "45",

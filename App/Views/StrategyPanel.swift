@@ -1,93 +1,89 @@
 import SwiftUI
 
-/// Strategy choice, money settings and the suggestion for the next hand.
+/// Strategy settings in the original's order: strategy and bet, win condition, loss condition,
+/// stop rules, consecutive wins and consecutive losses. Win and loss conditions show what the
+/// strategy does; only its settings can be changed.
 struct StrategyPanel: View {
     @Environment(GameViewModel.self) private var game
-    /// Settings above the suggestion instead of beside it, for narrow windows.
-    var isStacked = false
 
     var body: some View {
-        let layout = isStacked
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
+        let id = game.strategyID
+        let rules = StrategyRules.of(id)
+        let parameters = StrategyRegistry.parameters(for: id)
+        let own = parameters.filter { !StrategyParameter.sessionRules.contains($0) }
+        let betParameters = own.filter { !rules.lossParameterKeys.contains($0.key) }
+        let lossParameters = own.filter { rules.lossParameterKeys.contains($0.key) }
 
-        GroupBox("Strategy") {
-            layout {
-                Form {
-                    Picker("Strategy", selection: Binding(get: { game.strategyID }, set: { game.setStrategy($0) })) {
-                        ForEach(StrategyRegistry.all, id: \.self) { id in
-                            Text(StrategyRegistry.isImplemented(id) ? id.title : "\(id.title) (pending)")
-                                .tag(id)
-                        }
-                    }
-                    TextField(
-                        "Base unit",
-                        value: Binding(get: { game.strategySettings.baseUnit }, set: { game.setBaseUnit($0) }),
-                        format: .number
-                    )
-                    TextField(
-                        "Starting bankroll",
-                        value: Binding(get: { game.bankroll }, set: { game.setBankroll($0) }),
-                        format: .number
-                    )
-
-                    let parameters = StrategyRegistry.parameters(for: game.strategyID)
-                    ForEach(parameters.filter { !StrategyParameter.sessionRules.contains($0) }, id: \.key) {
-                        ParameterField(parameter: $0)
-                    }
-                    let stopRules = parameters.filter { StrategyParameter.sessionRules.contains($0) }
-                    if !stopRules.isEmpty {
-                        DisclosureGroup("Stop and pause") {
-                            ForEach(stopRules, id: \.key) { ParameterField(parameter: $0) }
-                        }
+        VStack(alignment: .leading, spacing: 10) {
+            section("Strategy", color: .accentColor) {
+                Picker("Strategy", selection: Binding(get: { game.strategyID }, set: { game.setStrategy($0) })) {
+                    ForEach(StrategyRegistry.all, id: \.self) { id in
+                        Text(StrategyRegistry.isImplemented(id) ? id.title : "\(id.title) (pending)")
+                            .tag(id)
                     }
                 }
-                .frame(maxWidth: isStacked ? .infinity : 280)
-
-                suggestionCard
+                LabeledContent("Bet on", value: rules.betOn)
+                ForEach(betParameters, id: \.key) { ParameterField(parameter: $0) }
+                TextField(
+                    "Base unit",
+                    value: Binding(get: { game.strategySettings.baseUnit }, set: { game.setBaseUnit($0) }),
+                    format: .number
+                )
+                TextField(
+                    "Starting bankroll",
+                    value: Binding(get: { game.bankroll }, set: { game.setBankroll($0) }),
+                    format: .number
+                )
             }
-            .padding(4)
+
+            section("Win condition", color: .green) {
+                LabeledContent("Bet on", value: rules.win.betOn)
+                LabeledContent("Amount", value: rules.win.amount)
+            }
+
+            section("Loss condition", color: .red) {
+                LabeledContent("Bet on", value: rules.loss.betOn)
+                LabeledContent("Amount", value: rules.loss.amount)
+                ForEach(lossParameters, id: \.key) { ParameterField(parameter: $0) }
+            }
+
+            section("Stop rules", color: .orange) {
+                ForEach(rulesIn(StrategyParameter.moneyRules, of: parameters), id: \.key) { ParameterField(parameter: $0) }
+            }
+
+            section("Consecutive wins", color: .green) {
+                ForEach(rulesIn(StrategyParameter.winRules, of: parameters), id: \.key) { ParameterField(parameter: $0) }
+            }
+
+            section("Consecutive losses", color: .red) {
+                ForEach(rulesIn(StrategyParameter.lossRules, of: parameters), id: \.key) { ParameterField(parameter: $0) }
+            }
         }
     }
 
-    private var suggestionCard: some View {
-        let suggestion = game.nextSuggestion
-        return VStack(alignment: .leading, spacing: 6) {
-            Text("Next hand")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(suggestion.side == .none ? "No bet" : "\(suggestion.side.title) · \(game.nextStake.money)")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(suggestion.side.color)
-            if suggestion.side != .none {
-                Text("\(suggestion.units.money) units" + (suggestion.step.map { " · step \($0)" } ?? ""))
-                    .foregroundStyle(.secondary)
-            }
-            if !suggestion.reason.isEmpty {
-                Text(suggestion.reason)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Divider()
-            HStack {
-                Text("Balance")
-                Spacer()
-                Text(game.ledger.balance.money).monospacedDigit()
-            }
-            HStack {
-                Text("Session P/L")
-                Spacer()
-                Text(game.ledger.summary.netResult.signedMoney)
-                    .monospacedDigit()
-                    .foregroundStyle(game.ledger.summary.netResult < 0 ? .red : .primary)
-            }
+    private func rulesIn(_ group: [StrategyParameter], of parameters: [StrategyParameter]) -> [StrategyParameter] {
+        group.filter { parameters.contains($0) }
+    }
+
+    private func section<Content: View>(
+        _ title: String,
+        color: Color,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        GroupBox {
+            Form { content() }
+                .padding(4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(color)
         }
-        .frame(minWidth: 220, maxWidth: .infinity, alignment: .leading)
     }
 }
 
-/// One strategy setting. Saved on Return or when the field loses focus, not on every keystroke.
+/// One strategy setting: a menu when it has fixed choices, otherwise a text field that saves on
+/// Return or when it loses focus, not on every keystroke.
 private struct ParameterField: View {
     @Environment(GameViewModel.self) private var game
     let parameter: StrategyParameter
@@ -97,6 +93,20 @@ private struct ParameterField: View {
     private var stored: String { game.strategySettings.parameters[parameter.key] ?? "" }
 
     var body: some View {
+        if parameter.choices.isEmpty {
+            textField
+        } else {
+            Picker(parameter.title, selection: Binding(
+                get: { parameter.choices.contains(stored) ? stored : parameter.defaultValue },
+                set: { game.setParameter(parameter.key, to: $0) }
+            )) {
+                ForEach(parameter.choices, id: \.self) { Text($0).tag($0) }
+            }
+            .help(parameter.help)
+        }
+    }
+
+    private var textField: some View {
         TextField(
             parameter.title,
             text: $text,
