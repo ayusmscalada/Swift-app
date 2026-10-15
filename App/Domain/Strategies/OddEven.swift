@@ -8,12 +8,12 @@ public struct OddEvenStrategy: BaccaratStrategy {
     public static let isImplemented = true
 
     static let oddSide = StrategyParameter(
-        "oddSide", "Odd results on", default: "B",
+        "oddSide", "Bet On (odd results)", default: "B",
         help: "B or P: the side for odd-numbered results. Even-numbered results get the other side.",
         choices: StrategyParameter.sideChoices
     )
     static let amounts = StrategyParameter(
-        "amounts", "Stakes (units)", default: "1,2,3,6,12,24",
+        "amounts", "Amount (units)", default: "1,2,3,6,12,24",
         help: "Stakes in order, separated by commas. After losing the last one it starts again."
     )
 

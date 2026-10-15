@@ -37,13 +37,6 @@ struct HistoryTableView: View {
             }
             .width(min: 44, ideal: 52)
 
-            TableColumn("Net") { row in
-                Text(row.entry.isBet ? row.entry.net.signedMoney : "—")
-                    .monospacedDigit()
-                    .foregroundStyle(row.entry.net < 0 ? .red : .primary)
-            }
-            .width(min: 50, ideal: 64)
-
             TableColumn("Rule") { row in
                 let reason = row.entry.suggestion.reason
                 Text(reason.isEmpty ? "—" : reason)
@@ -74,6 +67,8 @@ struct HistoryTableView: View {
                 Button("Delete Hand", role: .destructive) { game.deleteHand(id) }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Color.appPanel, in: RoundedRectangle(cornerRadius: 6))
         .frame(minHeight: 160)
     }
 

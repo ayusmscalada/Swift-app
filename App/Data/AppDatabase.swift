@@ -87,6 +87,14 @@ public final class AppDatabase {
             }
         }
 
+        // Cards and the Stop Auto Bet flag per hand, from the original's main screen.
+        migrator.registerMigration("v2") { db in
+            try db.alter(table: "hand") { t in
+                t.add(column: "cards", .text)
+                t.add(column: "bet_off", .boolean).notNull().defaults(to: false)
+            }
+        }
+
         return migrator
     }
 }

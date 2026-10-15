@@ -62,13 +62,17 @@ public struct HandRecord: Codable, FetchableRecord, MutablePersistableRecord, Id
     public var bankerPair: Bool
     public var playerPair: Bool
     public var enteredAt: String
+    /// "Q,4,3|5,5,K" (Player | Banker), or nil when no cards were entered.
+    public var cards: String?
+    public var betOff: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id, seq, result
+        case id, seq, result, cards
         case shoeID = "shoe_id"
         case bankerPair = "banker_pair"
         case playerPair = "player_pair"
         case enteredAt = "entered_at"
+        case betOff = "bet_off"
     }
 
     public mutating func didInsert(_ inserted: InsertionSuccess) {
@@ -76,7 +80,13 @@ public struct HandRecord: Codable, FetchableRecord, MutablePersistableRecord, Id
     }
 
     public var hand: Hand {
-        Hand(Outcome(rawValue: result) ?? .tie, bankerPair: bankerPair, playerPair: playerPair)
+        Hand(
+            Outcome(rawValue: result) ?? .tie,
+            bankerPair: bankerPair,
+            playerPair: playerPair,
+            cards: cards.flatMap(HandCards.init(encoded:)),
+            betOff: betOff
+        )
     }
 }
 

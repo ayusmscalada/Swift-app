@@ -19,16 +19,28 @@ public enum Outcome: String, Codable, CaseIterable, Hashable, Sendable {
     }
 }
 
-/// One entered hand: its outcome plus the optional pair flags.
+/// One entered hand: its outcome, the optional pair flags and cards, and whether betting was
+/// stopped (Stop Auto Bet) when it was dealt.
 public struct Hand: Codable, Hashable, Sendable {
     public var outcome: Outcome
     public var bankerPair: Bool
     public var playerPair: Bool
+    public var cards: HandCards?
+    /// True when auto bet was stopped: the hand is recorded but nothing is bet on it.
+    public var betOff: Bool
 
-    public init(_ outcome: Outcome, bankerPair: Bool = false, playerPair: Bool = false) {
+    public init(
+        _ outcome: Outcome,
+        bankerPair: Bool = false,
+        playerPair: Bool = false,
+        cards: HandCards? = nil,
+        betOff: Bool = false
+    ) {
         self.outcome = outcome
         self.bankerPair = bankerPair
         self.playerPair = playerPair
+        self.cards = cards
+        self.betOff = betOff
     }
 }
 

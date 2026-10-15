@@ -56,6 +56,9 @@ struct SessionDetailView: View {
                 .padding(12)
             }
         }
+        // The original's navy background; controls use their dark look on it.
+        .background(Color.appBackground)
+        .environment(\.colorScheme, .dark)
         // B / P / T enter results while no text field has focus; a focused field keeps its keys.
         .focusable()
         .focusEffectDisabled()

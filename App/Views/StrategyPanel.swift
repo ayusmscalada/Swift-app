@@ -1,8 +1,9 @@
 import SwiftUI
+import AppKit
 
 /// Strategy settings in the original's order: strategy and bet, win condition, loss condition,
-/// stop rules, consecutive wins and consecutive losses. Win and loss conditions show what the
-/// strategy does; only its settings can be changed.
+/// stop rules, consecutive wins and losses, dummy bet, and Start / Stop Auto Bet.
+/// Win and loss conditions show what the strategy does; only its settings can be changed.
 struct StrategyPanel: View {
     @Environment(GameViewModel.self) private var game
 
@@ -11,18 +12,27 @@ struct StrategyPanel: View {
         let rules = StrategyRules.of(id)
         let parameters = StrategyRegistry.parameters(for: id)
         let own = parameters.filter { !StrategyParameter.sessionRules.contains($0) }
+        let hasBetOnSetting = own.contains { Self.betOnKeys.contains($0.key) }
         let betParameters = own.filter { !rules.lossParameterKeys.contains($0.key) }
         let lossParameters = own.filter { rules.lossParameterKeys.contains($0.key) }
 
         VStack(alignment: .leading, spacing: 10) {
-            section("Strategy", color: .accentColor) {
-                Picker("Strategy", selection: Binding(get: { game.strategyID }, set: { game.setStrategy($0) })) {
-                    ForEach(StrategyRegistry.all, id: \.self) { id in
-                        Text(StrategyRegistry.isImplemented(id) ? id.title : "\(id.title) (pending)")
-                            .tag(id)
+            section("Strategy", color: .orange) {
+                HStack {
+                    Picker("Strategy", selection: Binding(get: { game.strategyID }, set: { game.setStrategy($0) })) {
+                        ForEach(StrategyRegistry.all, id: \.self) { id in
+                            Text(StrategyRegistry.isImplemented(id) ? id.title : "\(id.title) (pending)")
+                                .tag(id)
+                        }
                     }
+                    // Settings save on their own; Update also saves the field being typed in.
+                    Button("Update") { NSApp.keyWindow?.makeFirstResponder(nil) }
+                        .help("Save the setting you are typing in now.")
                 }
-                LabeledContent("Bet on", value: rules.betOn)
+                ForEach(rulesIn([.ruleSequence], of: parameters), id: \.key) { ParameterField(parameter: $0) }
+                if !hasBetOnSetting {
+                    LabeledContent("Bet On", value: rules.betOn)
+                }
                 ForEach(betParameters, id: \.key) { ParameterField(parameter: $0) }
                 TextField(
                     "Base unit",
@@ -36,13 +46,13 @@ struct StrategyPanel: View {
                 )
             }
 
-            section("Win condition", color: .green) {
-                LabeledContent("Bet on", value: rules.win.betOn)
+            section("Win condition", color: .cyan) {
+                LabeledContent("Bet On", value: rules.win.betOn)
                 LabeledContent("Amount", value: rules.win.amount)
             }
 
-            section("Loss condition", color: .red) {
-                LabeledContent("Bet on", value: rules.loss.betOn)
+            section("Loss condition", color: .cyan) {
+                LabeledContent("Bet On", value: rules.loss.betOn)
                 LabeledContent("Amount", value: rules.loss.amount)
                 ForEach(lossParameters, id: \.key) { ParameterField(parameter: $0) }
             }
@@ -58,8 +68,29 @@ struct StrategyPanel: View {
             section("Consecutive losses", color: .red) {
                 ForEach(rulesIn(StrategyParameter.lossRules, of: parameters), id: \.key) { ParameterField(parameter: $0) }
             }
+
+            section("Dummy bet", color: .secondary) {
+                Text("To prevent the game from pausing when inactive, place a dummy bet.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(rulesIn(StrategyParameter.dummyRules, of: parameters), id: \.key) { ParameterField(parameter: $0) }
+            }
+
+            Button(action: game.toggleAutoBet) {
+                Text(game.autoBetRunning ? "STOP AUTO BET" : "START AUTO BET")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 36)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(game.autoBetRunning ? .red : .green)
+            .help(game.autoBetRunning
+                  ? "Stop betting: new results are recorded without a bet."
+                  : "Start betting again from the next hand.")
         }
     }
+
+    /// Settings that choose the side, shown as the strategy's Bet On.
+    private static let betOnKeys: Set<String> = ["firstSide", "sides", "oddSide"]
 
     private func rulesIn(_ group: [StrategyParameter], of parameters: [StrategyParameter]) -> [StrategyParameter] {
         group.filter { parameters.contains($0) }

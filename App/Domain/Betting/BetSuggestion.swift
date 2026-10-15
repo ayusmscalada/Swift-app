@@ -16,12 +16,16 @@ public struct BetSuggestion: Hashable, Sendable {
     public let step: Int?
     /// Shown in the UI when the original app shows a reason.
     public let reason: String
+    /// A small bet placed only so the game does not pause for inactivity. It changes the balance
+    /// but not the strategy's progression or win / loss counts.
+    public let isDummy: Bool
 
-    public init(side: Side, units: Decimal, step: Int? = nil, reason: String = "") {
+    public init(side: Side, units: Decimal, step: Int? = nil, reason: String = "", isDummy: Bool = false) {
         self.side = side
         self.units = side == .none ? 0 : units
         self.step = step
         self.reason = reason
+        self.isDummy = isDummy
     }
 
     public static func noBet(_ reason: String = "") -> BetSuggestion {

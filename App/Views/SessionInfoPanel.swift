@@ -13,7 +13,7 @@ struct SessionInfoPanel: View {
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 4) {
                     GridRow {
                         Text("Session").foregroundStyle(.secondary)
-                        Text(game.session?.name ?? "—").lineLimit(1)
+                        Text(Self.sessionTitle(game.session))
                     }
                     GridRow {
                         Text("Shoe").foregroundStyle(.secondary)
@@ -22,6 +22,19 @@ struct SessionInfoPanel: View {
                     GridRow {
                         Text("Time").foregroundStyle(.secondary)
                         Text(Self.clock(game.sessionDuration)).monospacedDigit()
+                    }
+                    GridRow {
+                        Text("Inactive").foregroundStyle(.secondary)
+                        Text("\(game.inactiveCount) hands without a bet").monospacedDigit()
+                    }
+                }
+                .lineLimit(1)
+
+                if let cards = game.lastCards, !cards.isEmpty {
+                    Divider()
+                    HStack(alignment: .top, spacing: 8) {
+                        cardColumn("PLAYER", cards.player, total: cards.playerTotal, color: Outcome.player.color)
+                        cardColumn("BANKER", cards.banker, total: cards.bankerTotal, color: Outcome.banker.color)
                     }
                 }
 
@@ -68,6 +81,26 @@ struct SessionInfoPanel: View {
         } label: {
             Text("Session").font(.headline)
         }
+    }
+
+    /// The last hand's cards for one side, one card per line as in the original.
+    private func cardColumn(_ title: String, _ ranks: [CardRank], total: Int, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(title).font(.caption.weight(.bold)).foregroundStyle(color)
+            ForEach(Array(ranks.enumerated()), id: \.offset) { _, rank in
+                Text(rank.rawValue).font(.title3.weight(.semibold)).monospacedDigit()
+            }
+            Text("= \(total)").font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+        .background(Color.appBackground.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    /// "2 · Monday table": the session number, as in the original, then its name.
+    static func sessionTitle(_ session: SessionRecord?) -> String {
+        guard let session else { return "—" }
+        return session.id.map { "\($0) · \(session.name)" } ?? session.name
     }
 
     /// "00:09:15"

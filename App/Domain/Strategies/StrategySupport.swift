@@ -70,10 +70,28 @@ extension StrategyParameter {
         help: "How many hands to skip when pausing after losses."
     )
 
+    /// The original's Rule Sequence field (rule_condition). Saved with the strategy; its meaning
+    /// is not confirmed yet, so no strategy uses it in its calculations.
+    public static let ruleSequence = StrategyParameter(
+        "ruleSequence", "Rule Sequence", default: "",
+        help: "Saved with the strategy. Not used in calculations until its meaning is confirmed."
+    )
+
+    // Dummy bet: "To prevent game from inactive pausing, place a dummy bet".
+    public static let inactiveCount = StrategyParameter(
+        "inactiveCount", "Inactive Count", default: "",
+        help: "After this many hands in a row without a bet, place a dummy bet. Empty: off."
+    )
+    public static let dummyAmount = StrategyParameter(
+        "dummyAmount", "Amount", default: "1",
+        help: "Money placed on Player as the dummy bet."
+    )
+
     public static let moneyRules = [stopProfit, stopLoss]
+    public static let dummyRules = [inactiveCount, dummyAmount]
     public static let winRules = [winAction, winLimit, pauseAfterWins, pauseWinHands]
     public static let lossRules = [lossAction, lossLimit, pauseAfterLosses, pauseHands]
-    public static let sessionRules = moneyRules + winRules + lossRules
+    public static let sessionRules = [ruleSequence] + moneyRules + winRules + lossRules + dummyRules
 }
 
 extension StrategySettings {
@@ -212,7 +230,8 @@ struct BettingCore {
     /// Takes in the hands recorded since the last call. Call it first in `evaluate`.
     mutating func update(ledger: BetLedger, settings: StrategySettings) {
         for entry in ledger.entries.dropFirst(seenEntries) {
-            guard entry.isBet else {
+            // A dummy bet is not part of the strategy, so it counts as a hand without a bet.
+            guard entry.isBet, !entry.suggestion.isDummy else {
                 if handsToPause > 0 { handsToPause -= 1 }
                 continue
             }

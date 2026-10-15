@@ -21,6 +21,13 @@ final class GameViewModel {
     var nextBankerPair = false
     var nextPlayerPair = false
 
+    /// Start / Stop Auto Bet. While stopped, results are recorded with no bet on them.
+    private(set) var autoBetRunning = true
+
+    /// Cards being entered for the next hand, and which side the card buttons add to.
+    private(set) var pendingCards = HandCards()
+    var cardsForPlayer = true
+
     var errorMessage: String?
     var isShowingReport = false
     var isImportingSequence = false
@@ -47,7 +54,14 @@ final class GameViewModel {
     var currentShoe: LoadedShoe? { loaded?.shoes.last }
     var currentHistory: GameHistory { currentShoe?.history ?? GameHistory() }
     var roads: RoadmapSnapshot { result?.roads ?? RoadmapEngine.snapshot(for: GameHistory()) }
-    var nextSuggestion: BetSuggestion { result?.nextSuggestion ?? .noBet() }
+    var nextSuggestion: BetSuggestion {
+        guard autoBetRunning else { return .noBet("Auto bet stopped.") }
+        return result?.nextSuggestion ?? .noBet()
+    }
+    /// Hands in a row without a bet (the original's Inactive Count).
+    var inactiveCount: Int { result?.inactiveCount ?? 0 }
+    /// Cards of the last hand of the current shoe, if they were entered.
+    var lastCards: HandCards? { currentShoe?.hands.last?.hand.cards }
     var ledger: BetLedger { result?.ledger ?? BetLedger(startingBankroll: bankroll) }
     var patterns: PatternSummary { PatternAnalyzer().analyze(currentHistory) }
     var nextStake: Decimal {
@@ -72,7 +86,7 @@ final class GameViewModel {
     private var streakCounts: [Int] {
         var count = 0
         return ledger.entries.map { entry in
-            if entry.isBet {
+            if entry.isBet, !entry.suggestion.isDummy {
                 if entry.net > 0 {
                     count = count > 0 ? count + 1 : 1
                 } else if entry.net < 0 {
@@ -146,13 +160,61 @@ final class GameViewModel {
 
     func enter(_ outcome: Outcome) {
         guard let shoeID = currentShoe?.shoe.id else { return }
-        let hand = Hand(outcome, bankerPair: nextBankerPair, playerPair: nextPlayerPair)
+        let hand = Hand(outcome, bankerPair: nextBankerPair, playerPair: nextPlayerPair, betOff: !autoBetRunning)
         perform {
             try env.sessions.appendHand(hand, toShoe: shoeID)
             nextBankerPair = false
             nextPlayerPair = false
             reload(persistBets: true)
         }
+    }
+
+    /// Enters the hand from the entered cards: the winner and the pairs come from the cards.
+    func enterFromCards() {
+        guard let shoeID = currentShoe?.shoe.id, let outcome = pendingCards.outcome else { return }
+        let cards = pendingCards
+        let hand = Hand(
+            outcome,
+            bankerPair: cards.bankerPair,
+            playerPair: cards.playerPair,
+            cards: cards,
+            betOff: !autoBetRunning
+        )
+        perform {
+            try env.sessions.appendHand(hand, toShoe: shoeID)
+            pendingCards = HandCards()
+            cardsForPlayer = true
+            reload(persistBets: true)
+        }
+    }
+
+    /// Adds a card to the chosen side, at most three per side.
+    func addCard(_ rank: CardRank) {
+        if cardsForPlayer {
+            guard pendingCards.player.count < 3 else { return }
+            pendingCards.player.append(rank)
+        } else {
+            guard pendingCards.banker.count < 3 else { return }
+            pendingCards.banker.append(rank)
+        }
+    }
+
+    func removeLastCard() {
+        if cardsForPlayer {
+            _ = pendingCards.player.popLast()
+        } else {
+            _ = pendingCards.banker.popLast()
+        }
+    }
+
+    func clearCards() {
+        pendingCards = HandCards()
+        cardsForPlayer = true
+    }
+
+    /// Start / Stop Auto Bet.
+    func toggleAutoBet() {
+        autoBetRunning.toggle()
     }
 
     /// Removes the last result. On an empty shoe (other than the first) it removes the shoe.

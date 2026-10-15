@@ -17,7 +17,7 @@ public struct PatternStrategy: BaccaratStrategy {
     public static let isImplemented = true
 
     static let firstSide = StrategyParameter(
-        "firstSide", "First bet on", default: "P",
+        "firstSide", "Bet On", default: "P",
         help: "B or P: the side for the very first bet of the session.",
         choices: StrategyParameter.sideChoices
     )

@@ -7,11 +7,11 @@ public struct SequenceStrategy: BaccaratStrategy {
     public static let isImplemented = true
 
     static let sides = StrategyParameter(
-        "sides", "Sides", default: "B,P,P,B,B,P,B,P",
+        "sides", "Bet On", default: "B,P,P,B,B,P,B,P",
         help: "Sides to bet in order, B or P, separated by commas."
     )
     static let amounts = StrategyParameter(
-        "amounts", "Stakes (units)", default: "1,2,3",
+        "amounts", "Amount (units)", default: "1,2,3",
         help: "Stakes in order, separated by commas. After losing the last one it starts again."
     )
 

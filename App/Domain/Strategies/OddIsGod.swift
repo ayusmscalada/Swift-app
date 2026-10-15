@@ -8,7 +8,7 @@ public struct OddIsGodStrategy: BaccaratStrategy {
     public static let isImplemented = true
 
     static let amounts = StrategyParameter(
-        "amounts", "Stakes (units)", default: "1,2,3",
+        "amounts", "Amount (units)", default: "1,2,3",
         help: "Stakes in order, separated by commas. After losing the last one it starts again."
     )
 

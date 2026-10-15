@@ -40,7 +40,7 @@ public struct SessionRepository {
             for (index, outcome) in outcomes.enumerated() {
                 var hand = HandRecord(
                     id: nil, shoeID: shoeID, seq: index + 1, result: outcome.rawValue,
-                    bankerPair: false, playerPair: false, enteredAt: now
+                    bankerPair: false, playerPair: false, enteredAt: now, cards: nil, betOff: false
                 )
                 try hand.insert(db)
             }
@@ -162,7 +162,8 @@ public struct SessionRepository {
             ) ?? 0
             var record = HandRecord(
                 id: nil, shoeID: shoeID, seq: maxSeq + 1, result: hand.outcome.rawValue,
-                bankerPair: hand.bankerPair, playerPair: hand.playerPair, enteredAt: Timestamp.now()
+                bankerPair: hand.bankerPair, playerPair: hand.playerPair, enteredAt: Timestamp.now(),
+                cards: hand.cards.map(\.encoded), betOff: hand.betOff
             )
             try record.insert(db)
             try touch(db, shoeID: shoeID)

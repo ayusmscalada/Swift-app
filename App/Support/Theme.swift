@@ -52,3 +52,10 @@ extension Decimal {
         self > 0 ? "+" + money : money
     }
 }
+
+extension Color {
+    /// The original's navy window background.
+    static let appBackground = Color(red: 0.102, green: 0.165, blue: 0.322)
+    /// Slightly lighter navy for panels and the bet table.
+    static let appPanel = Color(red: 0.137, green: 0.212, blue: 0.392)
+}

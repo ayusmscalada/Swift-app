@@ -8,12 +8,12 @@ public struct GrindingStrategy: BaccaratStrategy {
     public static let isImplemented = true
 
     static let firstSide = StrategyParameter(
-        "firstSide", "First bet on", default: "P",
+        "firstSide", "Bet On", default: "P",
         help: "B or P: the side to bet before the shoe has a winner.",
         choices: StrategyParameter.sideChoices
     )
     static let unit = StrategyParameter(
-        "unit", "Grind unit (units)", default: "1",
+        "unit", "Amount (units)", default: "1",
         help: "Starting stake, the step added after a win and the profit target of each cycle."
     )
 
