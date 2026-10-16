@@ -49,9 +49,10 @@ Nothing derived is stored. Roads, strategy state, the ledger and statistics are 
 
 Builds include a 24-hour trial (`App/Support/Trial/`). It runs in the background and shows nothing on screen:
 
-- The first launch is recorded in **Google time** from `time.google.com` (NTP), the first time the internet is reached.
-- Every launch, and every 60 seconds while running, the time is checked with Google. Between checks, and while offline, the estimate moves forward on the Mac's monotonic clock, so changing the date has no effect.
-- No internet: the app keeps running normally. Once the internet is back, the time is checked again. The trial can still end while offline, because the estimate keeps counting from the last Google check.
+- The first launch is recorded as soon as the app starts: in **Google time** from `time.google.com` (NTP) when the internet is reachable, otherwise in the **Mac's own clock** time.
+- A main run-loop timer checks every second whether the trial has ended, so the app closes on time even while busy.
+- When online, the current time comes from Google (fetched every 60 seconds and carried forward on the Mac's monotonic clock between fetches, so changing the date has no effect). When offline, it comes from the Mac's own clock.
+- No internet: the app keeps running normally. Once the internet is back, Google time is used again. The trial can still end while offline.
 - After 24 hours the app closes at once, even while running. A later launch shows "The trial token has expired. Please contact the developer." and closes.
 - The record is a hidden, obscurely named, lightly scrambled file in Application Support (`~/Library/Containers/com.example.baccarat.assistant/Data/Library/Application Support/.com.apple.cache.9f2a7c` for the sandboxed app). Not in the Keychain.
 - To build without the trial, set `TrialGuard.isEnabled = false`.
