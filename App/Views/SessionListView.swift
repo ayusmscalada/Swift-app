@@ -21,7 +21,11 @@ struct SessionListView: View {
                         .lineLimit(1)
                 }
                 .padding(.vertical, 4)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                // A fixed vertical size and a minimum height let a newly inserted row measure
+                // itself at once; without them the new row first appears at half height.
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: 36, maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
                 .help(session.name)
                 .tag(session.id)
                 .contextMenu {
