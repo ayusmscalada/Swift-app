@@ -56,6 +56,14 @@ extension Decimal {
 extension Color {
     /// The original's navy window background.
     static let appBackground = Color(red: 0.102, green: 0.165, blue: 0.322)
-    /// Slightly lighter navy for panels and the bet table.
+    /// Slightly lighter navy for panels.
     static let appPanel = Color(red: 0.137, green: 0.212, blue: 0.392)
+
+    // Bet table: a bright header and two clearly different row shades on the navy background.
+    static let tableHeader = Color(red: 0.231, green: 0.373, blue: 0.643)
+    static let tableHeaderText = Color(red: 1.0, green: 0.82, blue: 0.45)
+    static let tableRow = Color(red: 0.145, green: 0.224, blue: 0.408)
+    static let tableRowAlt = Color(red: 0.204, green: 0.302, blue: 0.525)
+    static let tableSelection = Color(red: 0.180, green: 0.440, blue: 0.800)
+    static let tableBorder = Color.white.opacity(0.18)
 }

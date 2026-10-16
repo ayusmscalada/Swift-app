@@ -1,75 +1,117 @@
 import SwiftUI
 
 /// Hands of the current shoe with the bet placed on each one, in the original's columns.
-/// Right-click a row to change its result or delete it; everything after it is recalculated.
+/// Drawn by hand instead of with `Table`, so the header and the striped rows keep clear,
+/// contrasting colours on the navy background.
+/// Click a row to select it; right-click it to change its result or delete it, and everything
+/// after it is recalculated.
 struct HistoryTableView: View {
     @Environment(GameViewModel.self) private var game
-    @State private var selection = Set<Int64>()
+    @State private var selectedID: Int64?
+
+    private struct Column {
+        let title: String
+        /// Nil: takes the remaining width.
+        let width: CGFloat?
+        var alignment: Alignment = .leading
+    }
+
+    private static let columns = [
+        Column(title: "No.", width: 40, alignment: .trailing),
+        Column(title: "Bet On", width: 64),
+        Column(title: "Amount", width: 70, alignment: .trailing),
+        Column(title: "Winner", width: 92),
+        Column(title: "Status", width: 54),
+        Column(title: "Rule", width: nil),
+        Column(title: "Count", width: 48, alignment: .trailing),
+        Column(title: "Balance", width: 84, alignment: .trailing),
+    ]
 
     var body: some View {
-        Table(Array(game.currentShoeRows.reversed()), selection: $selection) {
-            TableColumn("No.") { row in
-                Text("\(row.number)").monospacedDigit()
-            }
-            .width(36)
+        let rows = Array(game.currentShoeRows.reversed())
 
-            TableColumn("Bet On") { row in
-                let side = row.entry.suggestion.side
-                Text(side == .none ? "—" : side.title)
-                    .foregroundStyle(side.color)
-            }
-            .width(min: 56, ideal: 64)
-
-            TableColumn("Amount") { row in
-                Text(row.entry.isBet ? row.entry.stake.money : "—").monospacedDigit()
-            }
-            .width(min: 50, ideal: 64)
-
-            TableColumn("Winner") { row in
-                Text(row.hand.outcome.title + pairSuffix(row.hand))
-                    .foregroundStyle(row.hand.outcome.color)
-            }
-            .width(min: 60, ideal: 80)
-
-            TableColumn("Status") { row in
-                let status = Self.status(row.entry)
-                Text(status.text).foregroundStyle(status.color)
-            }
-            .width(min: 44, ideal: 52)
-
-            TableColumn("Rule") { row in
-                let reason = row.entry.suggestion.reason
-                Text(reason.isEmpty ? "—" : reason)
-                    .lineLimit(1)
-                    .foregroundStyle(.secondary)
-                    .help(reason)
-            }
-            .width(min: 60, ideal: 140)
-
-            TableColumn("Count") { row in
-                Text(row.entry.isBet ? "\(row.count)" : "—")
-                    .monospacedDigit()
-                    .foregroundStyle(row.count < 0 ? .red : .primary)
-            }
-            .width(min: 40, ideal: 44)
-
-            TableColumn("Balance") { row in
-                Text(row.entry.balance.money).monospacedDigit()
-            }
-            .width(min: 60, ideal: 80)
-        }
-        .contextMenu(forSelectionType: Int64.self) { ids in
-            if let id = ids.first {
-                ForEach(Outcome.allCases, id: \.self) { outcome in
-                    Button("Change to \(outcome.title)") { game.edit(handID: id, to: outcome) }
+        VStack(spacing: 0) {
+            header
+            ScrollView(.vertical) {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                        rowView(row, striped: index % 2 == 1)
+                    }
                 }
-                Divider()
-                Button("Delete Hand", role: .destructive) { game.deleteHand(id) }
+            }
+            .overlay {
+                if rows.isEmpty {
+                    Text("No hands yet").foregroundStyle(.secondary)
+                }
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.appPanel, in: RoundedRectangle(cornerRadius: 6))
+        .background(Color.tableRow)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.tableBorder))
         .frame(minHeight: 160)
+    }
+
+    private var header: some View {
+        HStack(spacing: 0) {
+            ForEach(Self.columns, id: \.title) { column in
+                cell(column) {
+                    Text(column.title)
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(Color.tableHeaderText)
+                }
+            }
+        }
+        .frame(height: 28)
+        .background(Color.tableHeader)
+        .overlay(alignment: .bottom) { Color.tableBorder.frame(height: 1) }
+    }
+
+    private func rowView(_ row: HistoryRow, striped: Bool) -> some View {
+        let entry = row.entry
+        let side = entry.suggestion.side
+        let status = Self.status(entry)
+        let reason = entry.suggestion.reason
+        let values: [AnyView] = [
+            AnyView(Text("\(row.number)").monospacedDigit()),
+            AnyView(Text(side == .none ? "—" : side.title).foregroundStyle(side.color)),
+            AnyView(Text(entry.isBet ? entry.stake.money : "—").monospacedDigit()),
+            AnyView(Text(row.hand.outcome.title + pairSuffix(row.hand)).foregroundStyle(row.hand.outcome.color)),
+            AnyView(Text(status.text).fontWeight(.semibold).foregroundStyle(status.color)),
+            AnyView(Text(reason.isEmpty ? "—" : reason).foregroundStyle(.white.opacity(0.75)).help(reason)),
+            AnyView(Text(entry.isBet ? "\(row.count)" : "—").monospacedDigit()
+                .foregroundStyle(row.count < 0 ? Color.red : Color.white)),
+            AnyView(Text(entry.balance.money).monospacedDigit()),
+        ]
+
+        return HStack(spacing: 0) {
+            ForEach(Array(Self.columns.enumerated()), id: \.offset) { index, column in
+                cell(column) { values[index] }
+            }
+        }
+        .lineLimit(1)
+        .foregroundStyle(.white)
+        .frame(height: 26)
+        .background(selectedID == row.id ? Color.tableSelection : (striped ? Color.tableRowAlt : Color.tableRow))
+        .contentShape(Rectangle())
+        .onTapGesture { selectedID = row.id }
+        .contextMenu {
+            ForEach(Outcome.allCases, id: \.self) { outcome in
+                Button("Change to \(outcome.title)") { game.edit(handID: row.id, to: outcome) }
+            }
+            Divider()
+            Button("Delete Hand", role: .destructive) { game.deleteHand(row.id) }
+        }
+    }
+
+    @ViewBuilder
+    private func cell<Content: View>(_ column: Column, @ViewBuilder content: () -> Content) -> some View {
+        let view = content()
+            .padding(.horizontal, 6)
+        if let width = column.width {
+            view.frame(width: width, alignment: column.alignment)
+        } else {
+            view.frame(maxWidth: .infinity, alignment: column.alignment)
+        }
     }
 
     /// WIN, LOSS or TIE, as in the original's Status column.
