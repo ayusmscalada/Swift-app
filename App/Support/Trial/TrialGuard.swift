@@ -2,44 +2,33 @@ import Foundation
 import AppKit
 import Observation
 
-/// The 24-hour trial.
+/// The 24-hour trial, checked in the background with nothing shown on screen.
 ///
 /// - The first launch is recorded in Google time (`TrialStore`).
 /// - Every launch, and every minute while the app runs, the time is checked with Google.
 ///   Between checks the countdown runs on the Mac's monotonic clock, so changing the date
 ///   does nothing.
-/// - Without internet the app is frozen (`isUnlocked` is false) and keeps retrying.
-/// - 24 hours after the first launch the app is locked, even while running, and every later
-///   launch shows only the expiry message.
+/// - Without internet the app's controls are frozen (`isFrozen`) until Google answers again.
+/// - 24 hours after the first launch the app closes at once, and every later launch closes
+///   it straight away.
 @MainActor
 @Observable
 final class TrialGuard {
-    enum State: Equatable {
-        case checking, offline, active, expired
-    }
-
     /// Set to false to build a version without the trial.
     static let isEnabled = true
     static let duration: TimeInterval = 24 * 60 * 60
-    static let expiredMessage = "The trial token has expired. Please contact the developer."
 
     private static let recheckInterval: TimeInterval = 60
     private static let retryInterval: TimeInterval = 10
 
-    private(set) var state: State = isEnabled ? .checking : .active
-    /// Time left in the trial, updated every second while active.
-    private(set) var remaining: TimeInterval = duration
-
-    var isUnlocked: Bool { state == .active }
+    /// True while Google cannot be reached: the window's controls are disabled.
+    private(set) var isFrozen = false
 
     private var task: Task<Void, Never>?
 
     func start() {
-        guard Self.isEnabled, task == nil, state != .expired else { return }
-        if TrialStore.load()?.expired == true {
-            expire()
-            return
-        }
+        guard Self.isEnabled, task == nil else { return }
+        if TrialStore.load()?.expired == true { Self.forceQuit() }
         task = Task { [weak self] in await self?.run() }
     }
 
@@ -49,10 +38,11 @@ final class TrialGuard {
             do {
                 googleNow = try await GoogleTime.now()
             } catch {
-                state = .offline
+                isFrozen = true
                 try? await Task.sleep(nanoseconds: UInt64(Self.retryInterval * 1_000_000_000))
                 continue
             }
+            isFrozen = false
 
             let record: TrialRecord
             if let stored = TrialStore.load() {
@@ -62,42 +52,31 @@ final class TrialGuard {
                 TrialStore.save(record)
             }
 
-            // Count down each second from this Google time until the next check.
+            // Count down from this Google time until the next check.
             let checkedAt = GoogleTime.monotonicSeconds()
             while !Task.isCancelled {
                 let elapsed = GoogleTime.monotonicSeconds() - checkedAt
                 let now = googleNow.addingTimeInterval(elapsed)
-                remaining = Self.duration - now.timeIntervalSince(record.firstLaunch)
-                if record.expired || remaining <= 0 {
-                    expire()
+                if record.expired || now.timeIntervalSince(record.firstLaunch) >= Self.duration {
+                    expire(record)
                     return
                 }
-                state = .active
                 if elapsed >= Self.recheckInterval { break }
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }
     }
 
-    private func expire() {
-        state = .expired
-        remaining = 0
-        if var record = TrialStore.load() {
-            record.expired = true
-            TrialStore.save(record)
-        }
-        task?.cancel()
-        Self.showExpiredAlertAndQuit()
+    private func expire(_ record: TrialRecord) {
+        var expired = record
+        expired.expired = true
+        TrialStore.save(expired)
+        Self.forceQuit()
     }
 
-    /// The only thing an expired trial shows: the message, then the app quits.
-    static func showExpiredAlertAndQuit() {
-        let alert = NSAlert()
-        alert.alertStyle = .critical
-        alert.messageText = expiredMessage
-        alert.addButton(withTitle: "Quit")
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        alert.runModal()
-        NSApplication.shared.terminate(nil)
+    /// Closes the app immediately, with no message.
+    static func forceQuit() -> Never {
+        UserDefaults.standard.synchronize()
+        exit(0)
     }
 }

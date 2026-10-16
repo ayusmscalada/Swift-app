@@ -1,12 +1,12 @@
 import SwiftUI
 import AppKit
 
-/// An expired trial shows only its message: checked before any window opens.
+/// An expired trial closes the app before any window opens.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         if TrialGuard.isEnabled, TrialStore.load()?.expired == true {
-            TrialGuard.showExpiredAlertAndQuit()
+            TrialGuard.forceQuit()
         }
     }
 }
@@ -28,8 +28,7 @@ struct BaccaratAssistantApp: App {
             MainView()
                 .environment(game)
                 .environment(trial)
-                .disabled(!trial.isUnlocked)
-                .overlay { TrialLockView().environment(trial) }
+                .disabled(trial.isFrozen)
                 .frame(minWidth: 720, minHeight: 520)
                 .onAppear {
                     NSApplication.shared.activate(ignoringOtherApps: true)
@@ -37,8 +36,8 @@ struct BaccaratAssistantApp: App {
                 }
         }
         .commands {
-            // Every menu action is off while the trial is checking, offline or expired.
-            let locked = !trial.isUnlocked
+            // Every menu action is off while Google cannot be reached.
+            let locked = trial.isFrozen
             CommandGroup(replacing: .newItem) {
                 Button("New Session") { game.newSession() }
                     .keyboardShortcut("n")
@@ -77,7 +76,7 @@ struct BaccaratAssistantApp: App {
         Settings {
             SettingsView()
                 .environment(game)
-                .disabled(!trial.isUnlocked)
+                .disabled(trial.isFrozen)
         }
     }
 }

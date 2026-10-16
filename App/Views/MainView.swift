@@ -23,9 +23,6 @@ struct MainView: View {
                 }
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .status) { TrialBadge() }
-        }
         .fileImporter(
             isPresented: $game.isImportingSequence,
             allowedContentTypes: [.plainText, .commaSeparatedText, .text]

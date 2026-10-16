@@ -47,14 +47,14 @@ Nothing derived is stored. Roads, strategy state, the ledger and statistics are 
 
 ## 24-hour trial
 
-Builds include a 24-hour trial (`App/Support/Trial/`):
+Builds include a 24-hour trial (`App/Support/Trial/`). It runs in the background and shows nothing on screen:
 
-- The first launch is recorded in **Google time** (the `Date` header of `https://www.google.com/generate_204`), in the Keychain and in the app's settings.
+- The first launch is recorded in **Google time** (the `Date` header of `https://www.google.com/generate_204`) in the app's settings (UserDefaults).
 - Every launch, and every 60 seconds while running, the time is checked with Google. Between checks the countdown uses the Mac's monotonic clock, so changing the date has no effect.
-- No internet: the window is frozen (only close, minimize and zoom work) and the app retries every 10 seconds.
-- After 24 hours the app locks, even while running, and every later launch shows only "The trial token has expired. Please contact the developer."
+- No internet: the window's controls and menu actions are disabled until Google answers again (retry every 10 seconds). Close, minimize and zoom still work.
+- After 24 hours the app closes at once, even while running, and every later launch closes it straight away.
 - To build without the trial, set `TrialGuard.isEnabled = false`.
-- To restart the trial on a test Mac: in **Keychain Access**, delete the item whose name ends in `.trial`, then run `defaults delete com.example.baccarat.assistant trialRecord` (for the sandboxed app, the settings file is under `~/Library/Containers/com.example.baccarat.assistant/`).
+- To restart the trial on a test Mac: `defaults delete com.example.baccarat.assistant trialRecord` (for the sandboxed app, the settings file is under `~/Library/Containers/com.example.baccarat.assistant/`).
 
 ## What works now
 
