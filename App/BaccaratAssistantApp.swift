@@ -1,8 +1,17 @@
 import SwiftUI
 import AppKit
 
+/// Checked before any window opens: an already-expired trial shows the message and quits.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        TrialGuard.checkAtLaunchAndQuitIfExpired()
+    }
+}
+
 @main
 struct BaccaratAssistantApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var game: GameViewModel
 
     init() {
@@ -16,7 +25,11 @@ struct BaccaratAssistantApp: App {
             MainView()
                 .environment(game)
                 .frame(minWidth: 720, minHeight: 520)
-                .onAppear { NSApplication.shared.activate(ignoringOtherApps: true) }
+                .onAppear {
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                    // Runs the 24-hour trial in the background; nothing is shown on screen.
+                    TrialGuard.start()
+                }
         }
         .commands {
             CommandGroup(replacing: .newItem) {

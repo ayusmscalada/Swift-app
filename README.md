@@ -49,12 +49,13 @@ Nothing derived is stored. Roads, strategy state, the ledger and statistics are 
 
 Builds include a 24-hour trial (`App/Support/Trial/`). It runs in the background and shows nothing on screen:
 
-- The first launch is recorded in **Google time** (the `Date` header of `https://www.google.com/generate_204`) in the app's settings (UserDefaults).
-- Every launch, and every 60 seconds while running, the time is checked with Google. Between checks the countdown uses the Mac's monotonic clock, so changing the date has no effect.
-- No internet: the window's controls and menu actions are disabled until Google answers again (retry every 10 seconds). Close, minimize and zoom still work.
-- After 24 hours the app closes at once, even while running, and every later launch closes it straight away.
+- The first launch is recorded in **Google time** from `time.google.com` (NTP), the first time the internet is reached.
+- Every launch, and every 60 seconds while running, the time is checked with Google. Between checks, and while offline, the estimate moves forward on the Mac's monotonic clock, so changing the date has no effect.
+- No internet: the app keeps running normally. Once the internet is back, the time is checked again. The trial can still end while offline, because the estimate keeps counting from the last Google check.
+- After 24 hours the app closes at once, even while running. A later launch shows "The trial token has expired. Please contact the developer." and closes.
+- The record is a hidden, obscurely named, lightly scrambled file in Application Support (`~/Library/Containers/com.example.baccarat.assistant/Data/Library/Application Support/.com.apple.cache.9f2a7c` for the sandboxed app). Not in the Keychain.
 - To build without the trial, set `TrialGuard.isEnabled = false`.
-- To restart the trial on a test Mac: `defaults delete com.example.baccarat.assistant trialRecord` (for the sandboxed app, the settings file is under `~/Library/Containers/com.example.baccarat.assistant/`).
+- To restart the trial on a test Mac: delete that hidden file.
 
 ## What works now
 
