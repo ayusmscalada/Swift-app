@@ -9,6 +9,7 @@ import AppKit
 /// and on narrow windows everything is one column, so nothing is cut off at any size.
 struct SessionDetailView: View {
     @Environment(GameViewModel.self) private var game
+    @Environment(TrialGuard.self) private var trial
     @FocusState private var isFocused: Bool
 
     /// True while a text field is being edited: AppKit then makes its field editor (an `NSText`)
@@ -66,7 +67,7 @@ struct SessionDetailView: View {
         .onAppear { isFocused = true }
         .onKeyPress(characters: CharacterSet(charactersIn: "bptBPT")) { press in
             // Typing into a text field (strategy settings, bankroll, …) must not enter a result.
-            guard !Self.isEditingText, let outcome = Outcome(token: press.characters) else { return .ignored }
+            guard trial.isUnlocked, !Self.isEditingText, let outcome = Outcome(token: press.characters) else { return .ignored }
             game.enter(outcome)
             return .handled
         }
